@@ -98,17 +98,17 @@ hr {
     padding-left: 26px;
 }
 
-#statsListItems {
+.statsListItems {
     overflow: hidden;
     font-size: 12px;
 }
 
-ul#statsListItems {
+ul.statsListItems {
     margin: 0;
     padding: 10px;
 }
 
-#statsListTitle {
+.statsListTitle {
     color: #999999;
 }
 

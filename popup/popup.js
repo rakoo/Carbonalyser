@@ -18,15 +18,18 @@ const carbonIntensityFactorIngCO2PerKWh = {
 };
 
 let statsInterval;
-let pieChart;
+let pieCharts = {};
 
-parseStats = () => {
-  const stats = localStorage.getItem('stats');
+parseStats = (key) => {
+  const stats = localStorage.getItem(key);
   return null === stats ? {} : JSON.parse(stats);
 }
 
-getStats = () => {
-  const stats = parseStats();
+getStats = (key) => {
+  if (!key) {
+    key = 'statsByOrigin';
+  }
+  const stats = parseStats(key);
   let total = 0;
   const sortedStats = [];
 
@@ -64,18 +67,11 @@ getStats = () => {
 
 toMegaByte = (value) => (Math.round(value/1024/1024));
 
-showStats = () => {
-  const stats = getStats();
-
-  if (stats.total === 0) {
-    return;
-  }
-
-  show(statsElement);
+showContent = (stats, itemsId, chartId) => {
   const labels = [];
   const series = [];
 
-  const statsListItemsElement = document.getElementById('statsListItems');
+  const statsListItemsElement = document.getElementById(itemsId);
   while (statsListItemsElement.firstChild) {
     statsListItemsElement.removeChild(statsListItemsElement.firstChild);
   }
@@ -92,6 +88,32 @@ showStats = () => {
     li.appendChild(text);
     statsListItemsElement.appendChild(li);
   }
+
+  if (!pieCharts[chartId]) {
+    let pieChart = new Chartist.Pie('#' + chartId, {labels, series}, {
+      donut: true,
+      donutWidth: 60,
+      donutSolid: true,
+      startAngle: 270,
+      showLabel: true
+    });
+    pieCharts[chartId] = pieChart;
+  } else {
+    pieCharts[chartId].update({labels, series});
+  }
+
+}
+
+showStats = () => {
+  const stats = getStats();
+
+  if (stats.total === 0) {
+    return;
+  }
+
+  show(statsElement);
+  showContent(getStats('statsByOrigin'), 'statsListItemsByOrigin', 'chartByOrigin');
+  showContent(getStats('statsByType'), 'statsListItemsByType', 'chartByType');
 
   let duration = localStorage.getItem('duration');
   duration = null === duration ? 0 : duration;
@@ -110,18 +132,6 @@ showStats = () => {
 
   const kmByCar = Math.round(1000 * gCO2Total / GESgCO2ForOneKmByCar) / 1000;
   const chargedSmartphones = Math.round(gCO2Total / GESgCO2ForOneChargedSmartphone);
-
-  if (!pieChart) {
-    pieChart = new Chartist.Pie('.ct-chart', {labels, series}, {
-      donut: true,
-      donutWidth: 60,
-      donutSolid: true,
-      startAngle: 270,
-      showLabel: true
-    });
-  } else {
-    pieChart.update({labels, series});
-  }
 
   const megaByteTotal = toMegaByte(stats.total);
   document.getElementById('duration').textContent = duration.toString();
@@ -162,7 +172,8 @@ reset = () => {
     return;
   }
 
-  localStorage.removeItem('stats');
+  localStorage.removeItem('statsByOrigin');
+  localStorage.removeItem('statsByType');
   localStorage.removeItem('duration');
   hide(statsElement);
   showStats();
@@ -177,7 +188,7 @@ init = () => {
     selectRegion.value = selectedRegion;
   }
 
-  if (null === localStorage.getItem('stats')) {
+  if (null === localStorage.getItem('statsByOrigin')) {
     hide(resetButton);
   } else {
     show(resetButton);
